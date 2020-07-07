@@ -33,6 +33,7 @@ namespace FM.DAL.Repositories
                             Convert.ToInt32(reader["draws"].ToString())
                             ));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -62,6 +63,7 @@ namespace FM.DAL.Repositories
                             Convert.ToInt32(reader["draws"].ToString())
                             ));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -81,6 +83,7 @@ namespace FM.DAL.Repositories
                     clubs.Add(
                         new LeagueTable(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
             return clubs;

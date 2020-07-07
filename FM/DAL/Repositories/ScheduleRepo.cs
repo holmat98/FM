@@ -9,6 +9,8 @@ namespace FM.DAL.Repositories
     using Entity;
     using FM.Model;
     using System.Data.SQLite;
+    using System.Threading;
+
     static class ScheduleRepo
     {
         public static List<Schedule> GetBundesligaSchedule()
@@ -23,6 +25,7 @@ namespace FM.DAL.Repositories
                 {
                     schedule.Add(new Schedule(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -41,6 +44,7 @@ namespace FM.DAL.Repositories
                 {
                     schedule.Add(new Schedule(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -59,6 +63,7 @@ namespace FM.DAL.Repositories
                 {
                     schedule.Add(new Schedule(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -77,6 +82,7 @@ namespace FM.DAL.Repositories
                 {
                     schedule.Add(new Schedule(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -106,6 +112,7 @@ namespace FM.DAL.Repositories
                 {
                     schedule.Add(new Schedule(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -124,6 +131,7 @@ namespace FM.DAL.Repositories
                 {
                     schedule.Add(new Schedule(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -142,6 +150,7 @@ namespace FM.DAL.Repositories
                 {
                     schedule.Add(new Schedule(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -161,6 +170,7 @@ namespace FM.DAL.Repositories
                 {
                     readerValue = Convert.ToInt32(reader["number"].ToString());
                 }
+                reader.Close();
                 connection.Close();
 
                 for (int i = 1; i <= readerValue; i++)
@@ -183,6 +193,7 @@ namespace FM.DAL.Repositories
                 {
                    matches.Add((int.Parse(reader["id"].ToString()), int.Parse(reader["host"].ToString()), int.Parse(reader["visitor"].ToString())));
                 }
+                reader.Close();
                 connection.Close();
             }
             return matches;
@@ -192,11 +203,43 @@ namespace FM.DAL.Repositories
         {
             using (var connection = DBConnection.Instance.Connection)
             {
-                SQLiteCommand command = new SQLiteCommand($"update schedule set host_goals = {hostGoals}, visitor_goals = {visitorGoals} where id = {id}", connection);
                 connection.Open();
+                SQLiteCommand command = new SQLiteCommand($"update schedule set host_goals = {hostGoals}, visitor_goals = {visitorGoals} where id = {id}", connection);
                 command.ExecuteNonQuery();
                 connection.Close();
             }
+        }
+
+        public static (string, string, int, int) GetScore(int id, int round)
+        {
+            (string, string, int, int) output;
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"select c1.name as host, c2.name as visitor, host_goals, visitor_goals from schedule inner join club as c1 on c1.id = host inner join club as c2 on c2.id = visitor where (host = {id} or visitor = {id}) and matchday = {round}", connection);
+                connection.Open();
+                var reader = command.ExecuteReader();
+                reader.Read();
+                output = (reader["host"].ToString(), reader["visitor"].ToString(), int.Parse(reader["host_goals"].ToString()), int.Parse(reader["visitor_goals"].ToString()));
+                reader.Close();
+                connection.Close();   
+            }
+            return output;
+        }
+
+        public static string GetDate(int round)
+        {
+            string output;
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"select date from schedule where matchday = {round}", connection);
+                connection.Open();
+                var reader = command.ExecuteReader();
+                reader.Read();
+                output = reader["date"].ToString();
+                reader.Close();
+                connection.Close();
+            }
+            return output;
         }
     }
 }

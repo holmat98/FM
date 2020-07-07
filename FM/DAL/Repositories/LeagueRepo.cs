@@ -22,6 +22,7 @@ namespace FM.DAL.Repositories
                 {
                     leagues.Add(new League(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 

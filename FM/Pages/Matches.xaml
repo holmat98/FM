@@ -16,6 +16,10 @@
         <vm:ScheduleViewModel/>
     </Page.DataContext>
 
+    <Page.Resources>
+        <vm:IntToString x:Key="converter" />
+    </Page.Resources>
+    
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -43,6 +47,9 @@
                           Margin="10 0 10 0"
                           ItemsSource="{Binding Path=Leagues}"
                           SelectedValue="{Binding Path=SelectedLeague}"
+                          VerticalContentAlignment="Center"
+                          FontSize="15"
+                          FontWeight="SemiBold"
                 >
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="SelectionChanged">
@@ -60,6 +67,9 @@
                           Visibility="{Binding Path=Visibility}"
                           ItemsSource="{Binding Path=MatchdayNumber}"
                           SelectedValue="{Binding Path=SelectedMatchday}"
+                          VerticalContentAlignment="Center"
+                          FontSize="15"
+                          FontWeight="SemiBold"
                 >
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="SelectionChanged">
@@ -84,6 +94,8 @@
                       IsReadOnly="True"
                       BorderBrush="Transparent"
                       Background="Transparent"
+                      CanUserSortColumns="False"
+                      CanUserResizeRows="False"
                       HorizontalScrollBarVisibility="Hidden"
                       VerticalScrollBarVisibility="Auto"
                       CanUserResizeColumns="False"
@@ -91,8 +103,8 @@
                       ItemsSource="{Binding Path=Schedule}">
                       <DataGrid.Columns>
                         <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="2*"/>
-                        <DataGridTextColumn Header="Host Goals" Binding="{Binding HostGoals}" Width="1*"/>
-                        <DataGridTextColumn Header="Visitor Goals" Binding="{Binding VisitorGoals}" Width="1*"/>
+                        <DataGridTextColumn Header="Host Goals" Binding="{Binding HostGoals, Converter={StaticResource converter}, Mode=OneWay}" Width="1*"/>
+                        <DataGridTextColumn Header="Visitor Goals" Binding="{Binding VisitorGoals, Converter={StaticResource converter}, Mode=OneWay}" Width="1*"/>
                         <DataGridTextColumn Header="Visitor" Binding="{Binding Visitor}" Width="2*"/>
                         <DataGridTextColumn Header="Matchday" Binding="{Binding Matchday}" Width="1*"/>
                     <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="2*"/>

@@ -28,6 +28,7 @@ namespace FM.DAL.Repositories
                 {
                     clubs.Add(new Club(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -46,6 +47,7 @@ namespace FM.DAL.Repositories
                 {
                     clubs.Add(new Club(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -64,6 +66,7 @@ namespace FM.DAL.Repositories
                 {
                     clubs.Add(new Club(Convert.ToInt32(reader["id"].ToString()), reader["name"].ToString(), leagueId: int.Parse(reader["league"].ToString())));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -82,6 +85,7 @@ namespace FM.DAL.Repositories
                 {
                     clubs.Add(new Club(reader));
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -100,6 +104,7 @@ namespace FM.DAL.Repositories
                 {
                     club = new Club(reader);
                 }
+                reader.Close();
                 connection.Close();
             }
 
@@ -108,24 +113,26 @@ namespace FM.DAL.Repositories
 
         }
 
-        public static void TransferToClub(int playerId, string oldClub, int transferCost, int playerSalary, string playerContract, int playerValue, int playerActuallSalary)
+        public static void TransferToClub(int playerId, string oldClub, int transferCost, int playerSalary, string playerContract, int playerValue, int playerActuallSalary, string position, int id)
         {
+            double clubBudget = 0;
+            double clubSalaryBudget = 0;
             using (var connection = DBConnection.Instance.Connection)
             {
                 SQLiteCommand command = new SQLiteCommand($"select budget, salaryBudget from club where id = \"{ClubStatus.ClubId}\"", connection);
                 connection.Open();
                 var reader = command.ExecuteReader();
-                double clubBudget = 0;
-                double clubSalaryBudget = 0;
-                while(reader.Read())
+                
+                while (reader.Read())
                 {
                     clubBudget = Convert.ToDouble(reader["budget"].ToString());
                     clubSalaryBudget = Convert.ToDouble(reader["salaryBudget"].ToString());
                 }
                 reader.Close();
-
-                if (transferCost <= clubBudget && playerSalary <= clubSalaryBudget)
-                {
+                connection.Close();
+            }    
+                if (transferCost <= clubBudget && playerSalary <= clubSalaryBudget && PositionCheck(id, position)) 
+                { 
                     var r = new Random();
                     int szansa = r.Next(1, 100);
                     if((szansa <= 90  && transferCost >= 1.5*playerValue) || (szansa <= 55 && transferCost >= 1.1 * playerValue) || (szansa <= 20 && transferCost < 1.1*playerValue))
@@ -135,14 +142,25 @@ namespace FM.DAL.Repositories
                         {
                             TransferFromClub(oldClub, transferCost, playerSalary);
                             PlayerRepo.PlayerTransfer(playerId, playerSalary, playerContract);
-                            SQLiteCommand command2 = new SQLiteCommand($"UPDATE club set budget = budget - {transferCost}, salaryBudget = salaryBudget - {playerSalary} where id = {ClubStatus.ClubId}", connection);
-                            command2.ExecuteNonQuery();
+
+                            using (var connection = DBConnection.Instance.Connection)
+                                {
+                                    connection.Open();
+                                    SQLiteCommand command2 = new SQLiteCommand($"UPDATE club set budget = budget - {transferCost}, salaryBudget = salaryBudget - {playerSalary} where id = {ClubStatus.ClubId}", connection);
+                                    command2.ExecuteNonQuery();
+                                    connection.Close();
+                                }
+
+                            
                             MessageBox.Show("Congratulations, You bought this player!!!");
+                            
                         }
                         else
                         {
                             MessageBox.Show("This player doesn't want to go to your club");
                         }
+
+                        
                     }
                     else
                     {
@@ -151,16 +169,14 @@ namespace FM.DAL.Repositories
                     
                 }
                 else
-                    MessageBox.Show("You can't afford this player");
-                connection.Close();
-            }
+                    MessageBox.Show("You can't afford this player"); 
         }
 
         public static void TransferFromClub(string clubName, int transferCost, int playerSalary)
         {
             using (var connection = DBConnection.Instance.Connection)
             {
-                SQLiteCommand command = new SQLiteCommand($"UPDATE club set budget = budget + {transferCost}, salaryBudget = salaryBudget + {playerSalary} where name = \"{clubName}\"", connection);
+                SQLiteCommand command = new SQLiteCommand($"UPDATE club set budget = budget + { transferCost}, salaryBudget = salaryBudget + { playerSalary} where name = \"{clubName}\"", connection);
                 connection.Open();
                 command.ExecuteNonQuery();
                 connection.Close();
@@ -184,6 +200,99 @@ namespace FM.DAL.Repositories
             using (var connection = DBConnection.Instance.Connection)
             {
                 SQLiteCommand command = new SQLiteCommand($"UPDATE club set points = points + {(teamGoals == oponentGoals ? "1" : teamGoals > oponentGoals ? "3" : "0")}, played = played + 1, scored_goals = scored_goals + {teamGoals}, lost_goals = lost_goals + {oponentGoals}, wins = wins + {(oponentGoals < teamGoals ? 1 : 0)}, loses = loses + {(oponentGoals > teamGoals ? 1 : 0)}, draws = draws + {(oponentGoals == teamGoals ? 1 : 0)} where id = {id}", connection);
+                connection.Open();
+                command.ExecuteNonQuery();
+                connection.Close();
+            }
+        }
+
+        public static int GetBudget(int id)
+        {
+            int budget;
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"select budget from club where id = {id}", connection);
+                connection.Open();
+                var reader = command.ExecuteReader();
+                reader.Read();
+                budget = int.Parse(reader["budget"].ToString());
+                reader.Close();
+                connection.Close();
+            }
+
+            return budget;
+        }
+
+        public static int GetSalary(int id)
+        {
+            int budget;
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"select salaryBudget from club where id = {id}", connection);
+                connection.Open();
+                var reader = command.ExecuteReader();
+                reader.Read();
+                budget = int.Parse(reader["salaryBudget"].ToString());
+                reader.Close();
+                connection.Close();
+            }
+
+            return budget;
+        }
+
+        public static bool PositionCheck(int id, string position)
+        {
+            int count;
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"select count(position) as count from players where club = {id} and position = \"{position}\"", connection);
+                connection.Open();
+                var reader = command.ExecuteReader();
+                reader.Read();
+                count = int.Parse(reader["count"].ToString());
+                reader.Close();
+                connection.Close();
+            }
+
+            if (position.Equals("Midfielder") && count >= 3)
+                return true;
+            else if (position.Equals("Defender") && count >= 4)
+                return true;
+            else if (position.Equals("Striker") && count >= 3)
+                return true;
+            else if (position.Equals("Goalkeeper") && count >= 1)
+                return true;
+            else
+                return false;
+        }
+
+        public static void Reset()
+        {
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"UPDATE club set points = 0, played = 0, scored_goals = 0, lost_goals = 0, wins = 0, loses = 0, draws = 0, budget = budget + 50000000, salaryBudget = salaryBudget + 70000", connection);
+                connection.Open();
+                command.ExecuteNonQuery();
+                connection.Close();
+            }
+        }
+
+        public static void UpdateBudget(int id, int money)
+        {
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"update club set budget = budget - {money} where id = {id}", connection);
+                connection.Open();
+                command.ExecuteNonQuery();
+                connection.Close();
+            }
+        }
+
+        public static void UpdateSalary(int id, int money)
+        {
+            using (var connection = DBConnection.Instance.Connection)
+            {
+                SQLiteCommand command = new SQLiteCommand($"Update club set salaryBudget = budget - {money} where id = {id}", connection);
                 connection.Open();
                 command.ExecuteNonQuery();
                 connection.Close();
